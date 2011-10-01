@@ -200,6 +200,8 @@
    * :accept
    * :accept-encoding
    * :as
+   * :connect-timeout
+   * :socket-timeout
 
   The following additional behaviors over also automatically enabled:
    * Exceptions are thrown for status codes other than 200-207, 300-303, or 307

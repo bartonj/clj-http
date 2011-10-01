@@ -5,11 +5,21 @@
   (:import (org.apache.http.entity ByteArrayEntity))
   (:import (org.apache.http.client.methods HttpGet HttpHead HttpPut HttpPost HttpDelete))
   (:import (org.apache.http.client.params CookiePolicy ClientPNames))
+  (:import (org.apache.http.params HttpConnectionParams BasicHttpParams))
   (:import (org.apache.http.impl.client DefaultHttpClient)))
 
 (defn- parse-headers [#^HttpResponse http-resp]
   (into {} (map (fn [#^Header h] [(.toLowerCase (.getName h)) (.getValue h)])
                 (iterator-seq (.headerIterator http-resp)))))
+
+(defn- client [connect-timeout socket-timeout]
+  (let [params (BasicHttpParams.)]
+	(.setParameter params ClientPNames/COOKIE_POLICY CookiePolicy/BROWSER_COMPATIBILITY)
+	(when connect-timeout (HttpConnectionParams/setConnectionTimeout params connect-timeout))
+	(when socket-timeout (HttpConnectionParams/setSoTimeout params socket-timeout))
+	(DefaultHttpClient. params)
+	)
+  )
 
 (defn request
   "Executes the HTTP request corresponding to the given Ring request map and
@@ -18,12 +28,9 @@
    Note that where Ring uses InputStreams for the request and response bodies,
    the clj-http uses ByteArrays for the bodies."
   [{:keys [request-method scheme server-name server-port uri query-string
-           headers content-type character-encoding body]}]
-  (let [http-client (DefaultHttpClient.)]
+           headers content-type character-encoding body connect-timeout socket-timeout]}]
+  (let [http-client (client connect-timeout socket-timeout)]
     (try
-      (-> http-client
-        (.getParams)
-        (.setParameter ClientPNames/COOKIE_POLICY CookiePolicy/BROWSER_COMPATIBILITY))
       (let [http-url (str scheme "://" server-name
                           (if server-port (str ":" server-port))
                           uri

@@ -3,7 +3,8 @@
   (:require [clojure.pprint :as pp])
   (:require [clj-http.core :as core])
   (:require [clj-http.util :as util])
-  (:require [ring.adapter.jetty :as ring]))
+  (:require [ring.adapter.jetty :as ring])
+  (:import java.util.Date))
 
 (defn handler [req]
   (pp/pprint req)
@@ -84,3 +85,14 @@
   (run-server)
   (let [resp (request {:request-method :get :uri "/error"})]
     (is (= 500 (:status resp)))))
+
+
+(deftest returns-timeout-response
+  (let [starttime (.getTime (Date.))]
+	(is (thrown? org.apache.http.conn.ConnectTimeoutException
+		   (request {:request-method :get :scheme "http" :server-name  "127.0.0.1"
+					:server-port 9999 :uri "/none" :connect-timeout 1})
+		   )
+		)
+	)
+  )
